@@ -1,0 +1,17 @@
+[package]
+name = "eyre-span"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight eyre handler for capturing tracing spans"
+authors = ["Kyuuhachi <caagr98@gmail.com>"]
+repository = "https://github.com/Kyuuhachi/eyre-span"
+license = "MIT OR Apache-2.0"
+categories = ["error-handling"]
+
+[dependencies]
+eyre = "0.6"
+tracing = "0.1"
+tracing-error = { version = "0.2", optional = true }
+
+[features]
+default = ["tracing-error"]
