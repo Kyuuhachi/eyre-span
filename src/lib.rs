@@ -22,7 +22,11 @@ struct Handler {
 }
 
 impl eyre::EyreHandler for Handler {
-	fn debug(&self, error: &dyn std::error::Error, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+	fn debug(
+		&self,
+		error: &dyn std::error::Error,
+		f: &mut std::fmt::Formatter,
+	) -> std::fmt::Result {
 		std::fmt::Debug::fmt(error, f)
 	}
 
@@ -34,14 +38,13 @@ impl eyre::EyreHandler for Handler {
 
 		if f.alternate() {
 			let mut s = String::new();
-			tracing_error::SpanTrace::new(self.span.clone())
-				.with_spans(|meta, fields| {
-					write!(s, "\n• {}::{}", meta.target(), meta.name()).unwrap();
-					if !fields.is_empty() {
-						write!(s, "{{{}}}", strip_ansi(fields.to_owned())).unwrap();
-					}
-					true
-				});
+			tracing_error::SpanTrace::new(self.span.clone()).with_spans(|meta, fields| {
+				write!(s, "\n• {}::{}", meta.target(), meta.name()).unwrap();
+				if !fields.is_empty() {
+					write!(s, "{{{}}}", strip_ansi(fields.to_owned())).unwrap();
+				}
+				true
+			});
 			f.write_str(&s)?;
 		}
 		Ok(())
@@ -51,9 +54,15 @@ impl eyre::EyreHandler for Handler {
 fn strip_ansi(mut s: String) -> String {
 	let mut keep = true;
 	s.retain(|c| match c {
-		'\x1B' => { keep = false; false }
-		'm' if !keep => { keep = true; false }
-		_ => keep
+		'\x1B' => {
+			keep = false;
+			false
+		}
+		'm' if !keep => {
+			keep = true;
+			false
+		}
+		_ => keep,
 	});
 	s
 }
@@ -75,7 +84,8 @@ pub trait ReportSpan: seal::Sealed {
 
 impl ReportSpan for Report {
 	fn span(&self) -> &Span {
-		&self.handler()
+		&self
+			.handler()
 			.downcast_ref::<Handler>()
 			.expect("eyre-span handler")
 			.span
@@ -109,5 +119,9 @@ pub fn emit<T>(e: Result<T, Report>) -> Option<T> {
 
 /// Installs the hook into Eyre. Required for this crate to function.
 pub fn install() -> Result<(), eyre::InstallError> {
-	eyre::set_hook(Box::new(|_| Box::new(Handler { span: tracing::Span::current() })))
+	eyre::set_hook(Box::new(|_| {
+		Box::new(Handler {
+			span: tracing::Span::current(),
+		})
+	}))
 }
